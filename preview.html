@@ -170,17 +170,34 @@
         const params = new URLSearchParams(window.location.search);
         
         window.onload = () => {
-            const flowers = params.get('f')?.split(',') || [];
-            const wrap = params.get('w') || 1;
+            let config = {};
+            const g = params.get('g');
             
-            document.getElementById('wrap-back-img').src = `wrap_back_${wrap}.svg`;
-            document.getElementById('wrap-front-img').src = `wrap_front_${wrap}.svg`;
-            document.getElementById('zoom-to').textContent = params.get('to');
-            document.getElementById('zoom-body').textContent = params.get('m');
-            document.getElementById('zoom-from').textContent = params.get('fr');
-            document.getElementById('mini-preview-to').textContent = "To: " + params.get('to');
-            document.getElementById('mini-preview-msg').textContent = params.get('m');
-            document.getElementById('mini-preview-from').textContent = "- " + params.get('fr');
+            if (g) {
+                const decoded = decodeURIComponent(atob(g).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+                const p = decoded.split('|');
+                let expanded = [];
+                p[0].split(',').forEach(item => {
+                    if (item.includes('*')) {
+                        const [id, count] = item.split('*');
+                        for(let i=0; i<parseInt(count); i++) expanded.push(id);
+                    } else { expanded.push(item); }
+                });
+                config = { f: expanded, w: p[1], to: p[2], m: p[3], fr: p[4] };
+            } else {
+                config = { f: params.get('f')?.split(',') || [], w: params.get('w') || 1, to: params.get('to'), m: params.get('m'), fr: params.get('fr') };
+            }
+
+            document.getElementById('wrap-back-img').src = `wrap_back_${config.w}.svg`;
+            document.getElementById('wrap-front-img').src = `wrap_front_${config.w}.svg`;
+            document.getElementById('zoom-to').textContent = config.to;
+            document.getElementById('zoom-body').textContent = config.m;
+            document.getElementById('zoom-from').textContent = config.fr;
+            document.getElementById('mini-preview-to').textContent = "To: " + config.to;
+            document.getElementById('mini-preview-msg').textContent = config.m;
+            document.getElementById('mini-preview-from').textContent = "- " + config.fr;
+
+            const flowers = config.f;
 
             if (flowers.length > 0 && flowers[0] !== "") {
                 flowers.forEach((id, index) => {

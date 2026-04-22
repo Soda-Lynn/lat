@@ -526,11 +526,17 @@
 
         function goToPreview() {
             if (bouquet.length === 0) { alert("Please add some flowers first!"); return; }
-            const flowerData = bouquet.map(f => f.id).join(',');
-            const to = encodeURIComponent(document.getElementById('msg-to').value);
-            const msg = encodeURIComponent(document.getElementById('msg-body').value);
-            const from = encodeURIComponent(document.getElementById('msg-from').value);
-            window.location.href = `preview.html?f=${flowerData}&w=${wrapIdx}&to=${to}&m=${msg}&fr=${from}`;
+            const counts = {};
+            bouquet.forEach(f => counts[f.id] = (counts[f.id] || 0) + 1);
+            const flowerData = Object.entries(counts).map(([id, count]) => count > 1 ? `${id}*${count}` : id).join(',');
+            
+            const to = document.getElementById('msg-to').value;
+            const msg = document.getElementById('msg-body').value;
+            const from = document.getElementById('msg-from').value;
+            
+            const data = [flowerData, wrapIdx, to, msg, from].join('|');
+            const token = btoa(encodeURIComponent(data).replace(/%([0-9A-F]{2})/g, (m, p) => String.fromCharCode('0x' + p)));
+            window.location.href = `preview.html?g=${token}`;
         }
     </script>
     <!-- Favicon -->

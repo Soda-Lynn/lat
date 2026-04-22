@@ -815,30 +815,21 @@
         function goToPreview() {
             const activeCube = cubes[currentBoxIndex];
             const foodItems = activeCube.querySelectorAll('.food-in-box');
-            const items = [];
-            
-            foodItems.forEach(img => {
-                const id = img.dataset.itemId;
-                const left = parseFloat(img.style.left);
-                const top = parseFloat(img.style.top);
-                // Format: id|left|top
-                items.push(`${id}|${left}|${top}`);
-            });
+            const items = Array.from(foodItems).map(img => 
+                `${img.dataset.itemId},${Math.round(parseFloat(img.style.left))},${Math.round(parseFloat(img.style.top))}`
+            ).join(';');
 
-            const itemsStr = items.join(',');
-            
-            // Use values from the gift card inputs (which are synced with the lid)
-            let toVal = document.getElementById('msg-to').value;
-            let msgVal = document.getElementById('msg-body').value;
-            let fromVal = document.getElementById('msg-from').value;
+            const data = [
+                currentBoxIndex + 1,
+                getComputedStyle(activeCube).getPropertyValue('--color').trim(),
+                document.getElementById('msg-to').value,
+                document.getElementById('msg-body').value,
+                document.getElementById('msg-from').value,
+                items
+            ].join('|');
 
-            const to = encodeURIComponent(toVal);
-            const msg = encodeURIComponent(msgVal);
-            const from = encodeURIComponent(fromVal);
-            
-            const color = encodeURIComponent(getComputedStyle(activeCube).getPropertyValue('--color').trim());
-            const boxType = currentBoxIndex + 1;
-            window.location.href = `preview_foodbox.html?i=${itemsStr}&bt=${boxType}&c=${color}&to=${to}&m=${msg}&fr=${from}`;
+            const token = btoa(encodeURIComponent(data).replace(/%([0-9A-F]{2})/g, (m, p) => String.fromCharCode('0x' + p)));
+            window.location.href = `preview_foodbox.html?g=${token}`;
         }
 
         function resetBouquet() {
