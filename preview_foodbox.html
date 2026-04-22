@@ -10,6 +10,19 @@
 
         body { font-family: 'Space Grotesk', sans-serif; background-color: #e9e4d1; margin: 0; overflow: hidden; user-select: none; -webkit-user-drag: none; }
 
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎁</text></svg>">
+
+    <!-- Meta Tags for Shared Gift -->
+    <meta name="description" content="Someone has sent you a digital gift! Open this link to see your interactive handcrafted 3D food box.">
+    <meta property="og:title" content="You've received a Digital Gift! 🎁">
+    <meta property="og:description" content="Someone sent you a digital gift from Poe Phalan Myar. Click to open your interactive food box!">
+    <meta property="og:image" content="rose.png">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="You've received a Digital Gift!">
+    <meta name="twitter:description" content="Someone sent you an interactive 3D food box. Open it now!">
+
         #interactive-grid { 
             position: fixed; top: 0; left: 0; width: 200vw; height: 200vh; 
             background-image: radial-gradient(circle at 2px 2px, #bcbaaf 2px, transparent 0); 
@@ -29,11 +42,13 @@
         .neo-btn:active { transform: translate(2px, 2px); box-shadow: 0px 0px 0px 0px black; }
 
         #mini-card-wrapper {
-            position: absolute; bottom: 40px; right: 20px; width: 110px; height: 75px;
-            z-index: 40; cursor: pointer; perspective: 1000px;
+            position: absolute; bottom: 20px; right: 15%; width: 160px; height: 110px;
+            z-index: 60; cursor: pointer; perspective: 1000px;
             transform: rotate(5deg); transition: transform 0.3s ease;
         }
         #mini-card-wrapper:hover { transform: rotate(0deg) scale(1.1); }
+        @media (max-width: 640px) { #mini-card-wrapper { width: 110px; height: 75px; } }
+
         .envelope-back { position: absolute; inset: 0; background: #fff; border: 2px solid black; box-shadow: 4px 4px 0px 0px black; z-index: 1; }
         .envelope-flap {
             position: absolute; top: 0; left: 0; width: 100%; height: 50%;
@@ -50,6 +65,7 @@
         }
         .opening .envelope-flap { transform: rotateX(180deg); z-index: 0; }
         .opening .envelope-paper { transform: translateY(-40px) scale(0.9); opacity: 0; }
+        #mini-preview-msg { font-size: 10px; }
 
         .viewport { perspective: 2000px; display: flex; justify-content: center; align-items: center; height: 400px; width: 100%; }
         #box-wrapper { perspective: 1200px; transform-style: preserve-3d; }
@@ -118,8 +134,11 @@
             <div id="box-wrapper">
                 <div id="box-cube" class="cube">
                     <div class="side-left"></div><div class="side-right"></div><div class="side-bottom"></div><div class="side-top"></div>
-                    <div class="lid-inner"><div id="box-items-layer" style="position: absolute; inset: 0;"></div>BOX CONTENT</div>
-                    <div id="food-container" style="position: absolute; inset: 0; transform-style: preserve-3d; pointer-events: none;"></div>
+                    <div class="lid-inner" style="z-index: 5;">
+                        <div id="box-items-layer" style="position: absolute; inset: 0;"></div>
+                        <span style="opacity: 0.3;">BOX CONTENT</span>
+                    </div>
+                    <div id="food-container" style="position: absolute; inset: 0; transform-style: preserve-3d; pointer-events: none; z-index: 10;"></div>
                     <div id="box-lid" class="lid" onclick="this.classList.toggle('open')">
                         <div class="lid-side ls-f"></div><div class="lid-side ls-b"></div><div class="lid-side ls-l"></div><div class="lid-side ls-r"></div>
                         <div class="lid-message-area">
@@ -130,10 +149,14 @@
                     </div>
                 </div>
             </div>
+            
             <div id="mini-card-wrapper" onclick="startOpeningSequence()">
-                <div class="envelope-flap" id="flap"></div>
                 <div class="envelope-paper" id="paper">
-                    <p class="text-[8px] font-black uppercase tracking-tighter">Open Me</p>
+                    <div class="flex flex-col items-center justify-center h-full w-full p-1 overflow-hidden">
+                        <p id="mini-preview-to" class="text-[7px] font-black uppercase border-b-[0.5px] border-black w-full text-center mb-0.5"></p>
+                        <p id="mini-preview-msg" class="text-[8px] font-bold text-center leading-tight flex-1 flex items-center">CLICK TO READ</p>
+                        <p id="mini-preview-from" class="text-[7px] font-black italic w-full text-right mt-0.5"></p>
+                    </div>
                 </div>
                 <div class="envelope-back"></div>
             </div>
@@ -178,6 +201,10 @@
             document.getElementById('zoom-to').textContent = decodeURIComponent(params.get('to') || '');
             document.getElementById('zoom-body').textContent = decodeURIComponent(params.get('m') || '');
             document.getElementById('zoom-from').textContent = decodeURIComponent(params.get('fr') || '');
+
+            document.getElementById('mini-preview-to').textContent = "To: " + decodeURIComponent(params.get('to') || '');
+            document.getElementById('mini-preview-msg').textContent = decodeURIComponent(params.get('m') || '');
+            document.getElementById('mini-preview-from').textContent = "- " + decodeURIComponent(params.get('fr') || '');
 
             document.getElementById('lid-to').value = decodeURIComponent(params.get('to') || '');
             document.getElementById('lid-body').value = decodeURIComponent(params.get('m') || '');

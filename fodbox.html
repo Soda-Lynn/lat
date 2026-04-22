@@ -124,7 +124,7 @@
                 padding: 80px 30px; z-index: 1000; transition: 0.4s;
             }
             .navbar.active { right: 0; }
-            .dropdown-menu {
+            .navbar .dropdown-menu {
                 position: static;
                 opacity: 1;
                 visibility: visible;
@@ -134,7 +134,9 @@
                 padding-left: 15px;
             }
             .page-shell { margin-bottom: 0; }
+            #category-tabs { justify-content: flex-start; padding-left: 1rem; padding-right: 1rem; }
             .builder-outer { border-width: 2px; }
+            .canvas-area { display: none; }
         }
 
         .grid-bg {
@@ -234,7 +236,7 @@
         .show-msg .gift-card { right: 30px; }
         .handwriting { font-family: 'Dancing Script', cursive; font-size: 1.2rem; border: none; background: transparent; width: 100%; height: 100px; resize: none; outline: none; }
 
-        .builder-outer { background: #2d1b2d; border: 4px solid black; border-radius: 24px; width: 100%; max-width: 1000px; margin: auto; box-shadow: 0px 10px 0px 0px rgba(0,0,0,1); overflow: hidden; }
+        .builder-outer { background: transparent; border: none; border-radius: 0; width: 100%; max-width: 1000px; margin: auto; box-shadow: none; overflow: hidden; }
         .canvas-area { 
             background: #eef4ff; border: 4px solid black; border-radius: 12px; 
             margin: 15px; height: 550px; 
@@ -304,7 +306,7 @@
         .plus-icon { transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); display: inline-block; }
         .plus-icon.rotated { transform: rotate(45deg); }
 
-        .builder-chin { background: #2d1b2d; padding: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .builder-chin { background: transparent; padding: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
     </style>
 </head>
 <body class="loaded">
@@ -334,7 +336,7 @@
             <h2 class="text-xl font-black uppercase mb-4 text-center scroll-reveal">Pick Your Foods</h2>
             
             <!-- Category Tabs -->
-            <div id="category-tabs" class="flex gap-2 mb-4 overflow-x-auto pb-2 w-full justify-center no-scrollbar"></div>
+            <div id="category-tabs" class="flex gap-2 mb-4 overflow-x-auto pb-2 w-full justify-center no-scrollbar whitespace-nowrap"></div>
 
             <div class="spin-carousel-container" id="carousel-parent">
                 <div class="spin-carousel-track" id="spin-track"></div>
@@ -445,9 +447,9 @@
                     </div>
                 </div>
                 <div class="gift-card">
-                    <input type="text" id="msg-to" class="w-full font-black text-[10px] outline-none" value="To: Dear Someone">
+                    <input type="text" id="msg-to" class="w-full font-black text-[10px] outline-none" placeholder="To: Dear Someone">
                     <textarea id="msg-body" class="handwriting" placeholder="Write something sweet..."></textarea>
-                    <input type="text" id="msg-from" class="w-full font-black text-[10px] text-right outline-none" value="- Your Lovely">
+                    <input type="text" id="msg-from" class="w-full font-black text-[10px] text-right outline-none" placeholder="- Your Lovely">
                 </div>
 
                 <div class="absolute bottom-4 right-4">
@@ -590,12 +592,33 @@
             tabsContainer.appendChild(btn);
         });
 
-        // Scroll to Spin Logic
+        // Scroll & Touch to Spin Logic
+        let isDragging = false;
+        let startTouchX = 0;
+
         document.getElementById('carousel-parent').addEventListener('wheel', (e) => {
             e.preventDefault();
             currentRotation += e.deltaY * -0.1;
             spinTrack.style.transform = `rotateY(${currentRotation}deg)`;
         }, { passive: false });
+
+        document.getElementById('carousel-parent').addEventListener('touchstart', (e) => {
+            isDragging = true;
+            startTouchX = e.touches[0].pageX;
+        });
+
+        document.getElementById('carousel-parent').addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            const currentX = e.touches[0].pageX;
+            const diff = currentX - startTouchX;
+            currentRotation += diff * 0.5;
+            spinTrack.style.transform = `rotateY(${currentRotation}deg)`;
+            startTouchX = currentX;
+        });
+
+        document.getElementById('carousel-parent').addEventListener('touchend', () => {
+            isDragging = false;
+        });
 
         renderCarousel(Object.keys(FOOD_DATA)[0]);
 
@@ -611,12 +634,14 @@
             let startX, startY;
 
             const handleStart = (e) => {
-                startX = e.pageX || e.touches[0].pageX;
-                startY = e.pageY || e.touches[0].pageY;
+                const touch = e.touches ? e.touches[0] : e;
+                startX = touch.pageX;
+                startY = touch.pageY;
                 
                 const moveRotate = (ev) => {
-                    const cx = ev.pageX || ev.touches[0].pageX;
-                    const cy = ev.pageY || ev.touches[0].pageY;
+                    const touchMove = ev.touches ? ev.touches[0] : ev;
+                    const cx = touchMove.pageX;
+                    const cy = touchMove.pageY;
                     cube.rotZ += (cx - startX) * 0.5;
                     cube.rotX -= (cy - startY) * 0.5;
                     cube.rotX = Math.min(Math.max(cube.rotX, 20), 85);
@@ -629,12 +654,17 @@
                 const endRotate = () => {
                     document.removeEventListener('mousemove', moveRotate);
                     document.removeEventListener('mouseup', endRotate);
+                    document.removeEventListener('touchmove', moveRotate);
+                    document.removeEventListener('touchend', endRotate);
                 };
                 document.addEventListener('mousemove', moveRotate);
                 document.addEventListener('mouseup', endRotate);
+                document.addEventListener('touchmove', moveRotate, { passive: false });
+                document.addEventListener('touchend', endRotate);
             };
 
             cube.addEventListener('mousedown', handleStart);
+            cube.addEventListener('touchstart', handleStart, { passive: false });
         });
 
         // Navigation Logic
@@ -668,7 +698,20 @@
             activeCube.style.setProperty('--color', color);
         }
 
-        function toggleMessage() { document.getElementById('main-builder').classList.toggle('show-msg'); }
+        function toggleMessage() { 
+            const builder = document.getElementById('main-builder');
+            builder.classList.toggle('show-msg');
+            
+            // Sync inputs between lid and gift card
+            const activeCube = cubes[currentBoxIndex];
+            const lidTo = activeCube.querySelector('.lid-input:first-child');
+            const lidBody = activeCube.querySelector('.lid-textarea');
+            const lidFrom = activeCube.querySelector('.lid-input:last-child');
+            
+            document.getElementById('msg-to').value = lidTo.value;
+            document.getElementById('msg-body').value = lidBody.value;
+            document.getElementById('msg-from').value = lidFrom.value;
+        }
 
         // Init
         window.addEventListener('load', () => {
@@ -783,9 +826,16 @@
             });
 
             const itemsStr = items.join(',');
-            const to = encodeURIComponent(document.getElementById('msg-to').value);
-            const msg = encodeURIComponent(document.getElementById('msg-body').value);
-            const from = encodeURIComponent(document.getElementById('msg-from').value);
+            
+            // Use values from the gift card inputs (which are synced with the lid)
+            let toVal = document.getElementById('msg-to').value;
+            let msgVal = document.getElementById('msg-body').value;
+            let fromVal = document.getElementById('msg-from').value;
+
+            const to = encodeURIComponent(toVal);
+            const msg = encodeURIComponent(msgVal);
+            const from = encodeURIComponent(fromVal);
+            
             const color = encodeURIComponent(getComputedStyle(activeCube).getPropertyValue('--color').trim());
             const boxType = currentBoxIndex + 1;
             window.location.href = `preview_foodbox.html?i=${itemsStr}&bt=${boxType}&c=${color}&to=${to}&m=${msg}&fr=${from}`;
@@ -803,6 +853,30 @@
                 badge.closest('.card-container').classList.remove('has-items');
             });
         }
+
+        // Real-time sync from gift card back to lid
+        document.getElementById('msg-to').addEventListener('input', (e) => {
+            cubes[currentBoxIndex].querySelector('.lid-input:first-child').value = e.target.value;
+        });
+        document.getElementById('msg-body').addEventListener('input', (e) => {
+            cubes[currentBoxIndex].querySelector('.lid-textarea').value = e.target.value;
+        });
+        document.getElementById('msg-from').addEventListener('input', (e) => {
+            cubes[currentBoxIndex].querySelector('.lid-input:last-child').value = e.target.value;
+        });
     </script>
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎁</text></svg>">
+
+    <!-- Meta Tags -->
+    <meta name="description" content="Build an interactive 3D food box gift. Fill it with snacks, drinks, and Myanmar treats.">
+    <meta property="og:title" content="Food Box Studio | Poe Phalan Myar">
+    <meta property="og:description" content="Create a personalized interactive 3D snack box for your friends and family.">
+    <meta property="og:image" content="rose.png">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Food Box Studio | Poe Phalan Myar">
+    <meta name="twitter:description" content="Design and share interactive 3D food gift boxes.">
+
 </body>
 </html>
